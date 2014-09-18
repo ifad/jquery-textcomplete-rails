@@ -298,10 +298,12 @@ if (typeof jQuery === 'undefined') {
 
   var dropdownViews = {};
   $(document).on('click', function (e) {
-    var id = e.originalEvent.keepTextCompleteDropdown;
-    $.each(dropdownViews, function (key, view) {
-      if (key !== id) { view.deactivate(); }
-    });
+    if(e.originalEvent) {
+      var id = e.originalEvent.keepTextCompleteDropdown;
+      $.each(dropdownViews, function (key, view) {
+        if (key !== id) { view.deactivate(); }
+      });
+    }
   });
 
   // Dropdown view
@@ -462,7 +464,11 @@ if (typeof jQuery === 'undefined') {
     _onClick: function (e) {
       var $el = $(e.target);
       e.preventDefault();
-      e.originalEvent.keepTextCompleteDropdown = this.id;
+
+      if(e.originalEvent) {
+        e.originalEvent.keepTextCompleteDropdown = this.id;
+      }
+
       if (!$el.hasClass('textcomplete-item')) {
         $el = $el.closest('.textcomplete-item');
       }
