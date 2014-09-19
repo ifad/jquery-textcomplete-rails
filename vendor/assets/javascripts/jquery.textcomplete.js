@@ -298,12 +298,10 @@ if (typeof jQuery === 'undefined') {
 
   var dropdownViews = {};
   $(document).on('click', function (e) {
-    if(e.originalEvent) {
-      var id = e.originalEvent.keepTextCompleteDropdown;
-      $.each(dropdownViews, function (key, view) {
-        if (key !== id) { view.deactivate(); }
-      });
-    }
+    var id = e.originalEvent.keepTextCompleteDropdown;
+    $.each(dropdownViews, function (key, view) {
+      if (key !== id) { view.deactivate(); }
+    });
   });
 
   // Dropdown view
@@ -323,7 +321,7 @@ if (typeof jQuery === 'undefined') {
     if (option.listPosition) { this.setPosition = option.listPosition; }
     if (option.height) { this.$el.height(option.height); }
     var self = this;
-    $.each(['maxCount', 'placement', 'footer', 'header'], function (_i, name) {
+    $.each(['maxCount', 'placement', 'footer', 'header', 'className'], function (_i, name) {
       if (option[name] != null) { self[name] = option[name]; }
     });
     this._bindEvents(element);
@@ -339,7 +337,7 @@ if (typeof jQuery === 'undefined') {
       if (!($parent instanceof $)) { $parent = $($parent); }
       var $el = $parent.children('.dropdown-menu')
       if (!$el.length) {
-        $el = $('<ul id="textcomplete-dropdown" class="dropdown-menu"></ul>').css({
+        $el = $('<ul class="dropdown-menu"></ul>').css({
           display: 'none',
           left: 0,
           position: 'absolute',
@@ -364,6 +362,7 @@ if (typeof jQuery === 'undefined') {
     placement: '',
     shown:     false,
     data:      [],     // Shown zipped data.
+    className: '',
 
     // Public methods
     // --------------
@@ -408,6 +407,7 @@ if (typeof jQuery === 'undefined') {
       if (!this.shown) {
         this.clear();
         this.$el.show();
+        if (this.className) { this.$el.addClass(this.className); }
         this.completer.fire('textComplete:show');
         this.shown = true;
       }
@@ -417,6 +417,7 @@ if (typeof jQuery === 'undefined') {
     deactivate: function () {
       if (this.shown) {
         this.$el.hide();
+        if (this.className) { this.$el.removeClass(this.className); }
         this.completer.fire('textComplete:hide');
         this.shown = false;
       }
@@ -464,11 +465,7 @@ if (typeof jQuery === 'undefined') {
     _onClick: function (e) {
       var $el = $(e.target);
       e.preventDefault();
-
-      if(e.originalEvent) {
-        e.originalEvent.keepTextCompleteDropdown = this.id;
-      }
-
+      e.originalEvent.keepTextCompleteDropdown = this.id;
       if (!$el.hasClass('textcomplete-item')) {
         $el = $el.closest('.textcomplete-item');
       }
