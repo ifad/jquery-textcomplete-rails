@@ -27,6 +27,7 @@ if (typeof jQuery === 'undefined') {
         $this.data('textComplete', completer);
       }
       if (typeof strategies === 'string') {
+        if (!completer) return;
         args.shift()
         completer[strategies].apply(completer, args);
       } else {
@@ -181,6 +182,7 @@ if (typeof jQuery === 'undefined') {
     // Invoke textcomplete.
     trigger: function (text, skipUnchangedTerm) {
       if (!this.dropdown) { this.initialize(); }
+      text != null || (text = this.adapter.getTextFromHeadToCaret());
       var searchQuery = this._extractSearchQuery(text);
       if (searchQuery.length) {
         var term = searchQuery[1];
@@ -225,8 +227,8 @@ if (typeof jQuery === 'undefined') {
 
     // Parse the given text and extract the first matching strategy.
     //
-    // Returns an array including the strategy and the query term if the
-    // text matches an strategy; otherwise returns an empty array..
+    // Returns an array including the strategy, the query term and the match
+    // object if the text matches an strategy; otherwise returns an empty array.
     _extractSearchQuery: function (text) {
       for (var i = 0; i < this.strategies.length; i++) {
         var strategy = this.strategies[i];
@@ -234,14 +236,14 @@ if (typeof jQuery === 'undefined') {
         if (context || context === '') {
           if (isString(context)) { text = context; }
           var match = text.match(strategy.match);
-          if (match) { return [strategy, match[strategy.index]]; }
+          if (match) { return [strategy, match[strategy.index], match]; }
         }
       }
       return []
     },
 
     // Call the search method of selected strategy..
-    _search: lock(function (free, strategy, term) {
+    _search: lock(function (free, strategy, term, match) {
       var self = this;
       strategy.search(term, function (data, stillSearching) {
         if (!self.dropdown.shown) {
@@ -259,7 +261,7 @@ if (typeof jQuery === 'undefined') {
           free();
           self._clearAtNext = true; // Call dropdown.clear at the next time.
         }
-      });
+      }, match);
     }),
 
     // Build a parameter for Dropdown#render.
@@ -298,7 +300,7 @@ if (typeof jQuery === 'undefined') {
 
   var dropdownViews = {};
   $(document).on('click', function (e) {
-    var id = e.originalEvent.keepTextCompleteDropdown;
+    var id = e.originalEvent && e.originalEvent.keepTextCompleteDropdown;
     $.each(dropdownViews, function (key, view) {
       if (key !== id) { view.deactivate(); }
     });
@@ -368,6 +370,9 @@ if (typeof jQuery === 'undefined') {
     // --------------
 
     destroy: function () {
+      // Don't remove $el because it may be shared by several textcompletes.
+      this.deactivate();
+
       this.$el.off('.' + this.id);
       this.$inputEl.off('.' + this.id);
       this.clear();
@@ -806,7 +811,7 @@ if (typeof jQuery === 'undefined') {
 
     _onKeyup: function (e) {
       if (this._skipSearch(e)) { return; }
-      this.completer.trigger(this._getTextFromHeadToCaret(), true);
+      this.completer.trigger(this.getTextFromHeadToCaret(), true);
     },
 
     // Suppress searching if it returns true.
@@ -859,7 +864,7 @@ if (typeof jQuery === 'undefined') {
 
     // Update the textarea with the given value and strategy.
     select: function (value, strategy) {
-      var pre = this._getTextFromHeadToCaret();
+      var pre = this.getTextFromHeadToCaret();
       var post = this.el.value.substring(this.el.selectionEnd);
       var newSubstr = strategy.replace(value);
       if ($.isArray(newSubstr)) {
@@ -884,7 +889,7 @@ if (typeof jQuery === 'undefined') {
     // Consequently, the span element's position is the thing what we want.
     _getCaretRelativePosition: function () {
       var dummyDiv = $('<div></div>').css(this._copyCss())
-        .text(this._getTextFromHeadToCaret());
+        .text(this.getTextFromHeadToCaret());
       var span = $('<span></span>').text('.').appendTo(dummyDiv);
       this.$el.before(dummyDiv);
       var position = span.position();
@@ -919,7 +924,7 @@ if (typeof jQuery === 'undefined') {
       }
     })($),
 
-    _getTextFromHeadToCaret: function () {
+    getTextFromHeadToCaret: function () {
       return this.el.value.substring(0, this.el.selectionEnd);
     }
   });
@@ -997,7 +1002,7 @@ if (typeof jQuery === 'undefined') {
     // Update the content with the given value and strategy.
     // When an dropdown item is selected, it is executed.
     select: function (value, strategy) {
-      var pre = this._getTextFromHeadToCaret();
+      var pre = this.getTextFromHeadToCaret();
       var sel = window.getSelection()
       var range = sel.getRangeAt(0);
       var selection = range.cloneRange();
@@ -1054,9 +1059,9 @@ if (typeof jQuery === 'undefined') {
     // Example
     //
     //   // Suppose the html is '<b>hello</b> wor|ld' and | is the caret.
-    //   this._getTextFromHeadToCaret()
+    //   this.getTextFromHeadToCaret()
     //   // => ' wor'  // not '<b>hello</b> wor'
-    _getTextFromHeadToCaret: function () {
+    getTextFromHeadToCaret: function () {
       var range = window.getSelection().getRangeAt(0);
       var selection = range.cloneRange();
       selection.selectNodeContents(range.startContainer);
